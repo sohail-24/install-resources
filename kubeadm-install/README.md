@@ -425,27 +425,36 @@ http://<NODE_PUBLIC_IP>:<INGRESS_NODEPORT>
 
 #Install ArgoCD into the cluster
 
+```bash
 kubectl create namespace argocd
+```
 
+```bash
 kubectl apply -n argocd \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
 
 #storageClass
 
+```bash
 kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+```
 
-#Verify
+# Verify
 
+```bash
 kubectl get storageclass
 kubectl get pvc -n sms
 kubectl get pods -n sms
+```
 
 ---
 Install nginx steps
 
+```bash
 sudo apt update
 sudo apt install -y nginx
-
+```
 
 
 ---
