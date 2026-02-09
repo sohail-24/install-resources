@@ -13,6 +13,10 @@ On Mac:
 cp ~/.kube/config ~/.kube/config.backup
 ```
 
+```bash
+rm -f ~/.kube/config
+```
+
  REMOVE old EKS context
 Now verify:
 
