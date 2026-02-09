@@ -423,7 +423,7 @@ Access via:
 http://<NODE_PUBLIC_IP>:<INGRESS_NODEPORT>
 ```
 
-#Install ArgoCD into the cluster
+# Install ArgoCD into the cluster
 
 ```bash
 kubectl create namespace argocd
@@ -434,7 +434,28 @@ kubectl apply -n argocd \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```
 
-#storageClass
+```bash
+kubectl patch svc argocd-server -n argocd -p '{
+  "spec": {
+    "type": "NodePort"
+  }
+}'
+```
+
+# password
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d
+```
+
+## 🌐 Access Application
+
+```bash
+kubectl get svc -n argocd
+```
+
+# storageClass
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
