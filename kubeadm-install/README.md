@@ -118,6 +118,13 @@ Verify on Master:
 kubectl get nodes
 ```
 
+
+# Add label for workers
+
+```bash
+kubectl label node ip-10-0-1-198 node-role.kubernetes.io/worker=worker
+```
+
 ---
 
 ## ✅ STEP 4 — Workload Validation
