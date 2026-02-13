@@ -140,6 +140,21 @@ kubectl get pods -n kube-system
 # 7️⃣ Join Worker Nodes
 
 # 8️⃣ Install AWS Cloud Controller Manager (CCM)
+## lets start
+
+```bash
+kubectl label node ip-10-0-1-198 node-role.kubernetes.io/worker=worker
+```
+
+# install Helm
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+```bash
+helm version
+```
 
 Add Helm repo:
 
