@@ -1,50 +1,58 @@
-## 🚀 Kubernetes kubeadm on AWS (Production Style)
+# 🚀 Kubernetes kubeadm on AWS (Production Style)
 
+This guide builds a **real production-style Kubernetes cluster on AWS using kubeadm**  
+with:
 
-📌 Architecture
+- Kubernetes v1.29
+- containerd runtime
+- Calico CNI
+- AWS External Cloud Controller Manager (CCM)
+- AWS NLB (Service Type LoadBalancer)
+- NGINX Ingress Controller
+- cert-manager (Let's Encrypt)
+- Route53 ready
+- Production IAM + Subnet tagging
 
-Kubernetes: v1.29
+---
 
-Runtime: containerd
+# 🏗️ Architecture
 
-CNI: Calico
+EC2 (Master + Workers)
+        |
+        |
+AWS Cloud Controller Manager
+        |
+        |
+AWS NLB (LoadBalancer Service)
+        |
+        |
+NGINX Ingress
+        |
+        |
+Application Pods
 
-Cloud Provider: AWS (External CCM)
+---
 
-Load Balancer: AWS NLB (Service Type LoadBalancer)
+# 1️⃣ EC2 Requirements
 
-Ingress: NGINX Ingress Controller
+### Open these ports in EC2 Security Group
 
-TLS: cert-manager (Let's Encrypt)
+| Port | Purpose |
+|------|---------|
+| 22 | SSH |
+| 6443 | Kubernetes API |
+| 10250 | Kubelet |
+| 30000-32767 | NodePort |
+| 80 | HTTP |
+| 443 | HTTPS |
 
-Domain: Route53 / External DNS ready
+---
 
-IAM: EC2 Instance Role
+# 2️⃣ IAM Role (MANDATORY)
 
-Subnet Tagging: Required for ELB discovery
+Create Policy: `KubernetesCloudControllerPolicy`
 
-
-
-Security Group must allow:
-
-6443 (K8s API)
-
-10250
-
-NodePort range (30000–32767)
-
-80
-
-443
-
-
-## 2️⃣ IAM Configuration
-
-Create Policy:
-KubernetesCloudControllerPolicy
-
-```bash
-
+```json
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -86,86 +94,95 @@ KubernetesCloudControllerPolicy
     }
   ]
 }
-
 ```
 
-## 3️⃣ Subnet Tagging (MANDATORY)
+Attach this policy to EC2 Instance Role.
 
+---
 
-VPC → Subnets
+# 3️⃣ Subnet Tagging (CRITICAL)
 
+Go to VPC → Subnets
+
+Add these tags to PUBLIC subnets:
+
+```
 Key: kubernetes.io/role/elb
 Value: 1
+```
 
+```
 Key: kubernetes.io/cluster/k8s-cluster
 Value: owned
+```
 
-## 5️⃣ Initialize Control Plane
+Cluster name MUST match Helm install.
 
-Run on Master:
+---
 
-```bash
+# 4️⃣ Common Setup (All Nodes)
+
+Run:
+
+```
+sudo bash common.sh
+```
+
+---
+
+# 5️⃣ Initialize Control Plane
+
+Run on master:
+
+```
 kubeadm init \
   --pod-network-cidr=192.168.0.0/16 \
   --upload-certs \
   --cloud-provider=external
 ```
 
-# Setup kubeconfig:
+Setup kubeconfig:
 
-```bash
+```
 mkdir -p $HOME/.kube
-```
-
-```bash
 cp /etc/kubernetes/admin.conf $HOME/.kube/config
-```
-
-```bash
 chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
+---
+
 # 6️⃣ Install Calico
 
-
-```bash
+```
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manifests/calico.yaml
 ```
 
-Verify:
-
-kubectl get pods -n kube-system
-
+---
 
 # 7️⃣ Join Worker Nodes
 
-# 8️⃣ Install AWS Cloud Controller Manager (CCM)
-## lets start
+Use the kubeadm join command generated.
 
-```bash
-kubectl label node ip-10-0-1-198 node-role.kubernetes.io/worker=worker
+---
+
+# 8️⃣ Install AWS Cloud Controller Manager
+
+Install Helm:
+
 ```
-
-# install Helm
-
-```bash
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 ```
 
-```bash
-helm version
+Add repo:
+
 ```
-
-Add Helm repo:
-
-```bash
 helm repo add aws-cloud-controller-manager https://kubernetes.github.io/cloud-provider-aws
 helm repo update
 ```
 
-Install:
+Install CCM:
 
-```bash
+```
 helm install aws-ccm aws-cloud-controller-manager/aws-cloud-controller-manager \
   -n kube-system \
   --set clusterName=k8s-cluster \
@@ -177,172 +194,98 @@ helm install aws-ccm aws-cloud-controller-manager/aws-cloud-controller-manager \
 
 Verify:
 
-```bash
-kubectl -n kube-system get pods | grep aws
+```
+kubectl -n kube-system get pods
 ```
 
-# 9️⃣ Test AWS LoadBalancer
+CCM must be Running.
 
-```bash
+---
+
+# 9️⃣ Test LoadBalancer
+
+Create app:
+
+```
 kubectl create deployment nginx --image=nginx
-```
-
-```bash
 kubectl expose deployment nginx --type=LoadBalancer --port=80
 ```
 
-check
+Check:
 
-```bash
+```
 kubectl get svc
 ```
-# 🔟 Install NGINX Ingress Controller
 
-```bash
+You should see:
+
+```
+EXTERNAL-IP: *.elb.amazonaws.com
+```
+
+Test:
+
+```
+curl localhost:<NodePort>
+```
+
+Then open ELB DNS in browser.
+
+---
+
+# 🔟 Install NGINX Ingress
+
+```
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
+```
 
+```
 helm install ingress-nginx ingress-nginx/ingress-nginx \
   --namespace ingress-nginx \
   --create-namespace \
   --set controller.service.type=LoadBalancer
 ```
 
-Verify:
-
-kubectl get svc -n ingress-nginx
+---
 
 # 1️⃣1️⃣ Install cert-manager
 
-```bash
+```
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
 ```
 
-```bash
+```
 helm install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
   --set installCRDs=true
 ```
 
-verifr:
+---
 
-kubectl get pods -n cert-manager
+# 1️⃣2️⃣ Production Checklist
 
+✔ IAM role attached  
+✔ Subnets tagged  
+✔ kubeadm init with external cloud provider  
+✔ CCM running  
+✔ Nodes Ready  
+✔ LoadBalancer created  
+✔ Ingress installed  
+✔ TLS ready  
 
-# 1️⃣2️⃣ Configure Let's Encrypt Issuer
+---
 
-```bash
-vi cluster-issuer.yaml
-```
-
-```bash
-
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-prod
-spec:
-  acme:
-    email: your-email@gmail.com
-    server: https://acme-v02.api.letsencrypt.org/directory
-    privateKeySecretRef:
-      name: letsencrypt-prod
-    solvers:
-      - http01:
-          ingress:
-            class: nginx
-```
-
-```bash
-kubectl apply -f cluster-issuer.yaml
-```
-
-#1️⃣3️⃣ Configure Domain
-
-Point your domain (Route53 or Cloudflare):
-
-```bash
-A Record → NGINX LoadBalancer External IP
-```
-
-# 1️⃣4️⃣ Example TLS Ingress
-
-```bash
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: nginx
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-spec:
-  ingressClassName: nginx
-  tls:
-  - hosts:
-    - yourdomain.com
-    secretName: nginx-tls
-  rules:
-  - host: yourdomain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: nginx
-            port:
-              number: 80
-```
-
-```bash
-kubectl apply -f ingress.yaml
-```
-
-# ✅ Final Production Checklist
-
-✔ IAM Role attached
-✔ Subnets tagged
-✔ CCM running
-✔ Nodes Ready
-✔ LoadBalancer created
-✔ Ingress installed
-✔ cert-manager running
-✔ Domain pointing correctly
-✔ TLS issued
-
-🏆 What You Built
+# 🏆 What You Built
 
 You built:
 
-Production-style kubeadm cluster
+- Real kubeadm cluster
+- External AWS CCM integration
+- AWS NLB provisioning
+- Production networking model
+- Ingress + TLS ready foundation
 
-External AWS Cloud Controller
-
-Real AWS NLB integration
-
-TLS automation
-
-Ingress routing
-
-Domain-based production setup
-
-This is real DevOps level production knowledge.
-
-If you want next:
-
-Add ArgoCD
-
-Add ExternalDNS
-
-Add Prometheus + Grafana
-
-Convert to HA Control Plane
-
-Convert to GitOps structure
-
-
-
-
-
-
+This is real DevOps production-level architecture.
