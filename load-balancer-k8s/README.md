@@ -143,10 +143,16 @@ kubeadm init \
 
 Setup kubeconfig:
 
-```
+```bash
 mkdir -p $HOME/.kube
-cp /etc/kubernetes/admin.conf $HOME/.kube/config
-chown $(id -u):$(id -g) $HOME/.kube/config
+```
+
+```bash
+sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config
+```
+
+```bash
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
 ---
@@ -189,7 +195,9 @@ helm install aws-ccm aws-cloud-controller-manager/aws-cloud-controller-manager \
   --set region=ap-south-1 \
   --set serviceAccount.create=true \
   --set hostNetworking=true \
-  --set extraArgs.configure-cloud-routes=false
+  --set extraArgs.configure-cloud-routes=false \
+  --set extraArgs.allocate-node-cidrs=false
+
 ```
 
 Verify:
@@ -206,8 +214,11 @@ CCM must be Running.
 
 Create app:
 
-```
+```bash
 kubectl create deployment nginx --image=nginx
+```
+
+```bash
 kubectl expose deployment nginx --type=LoadBalancer --port=80
 ```
 
