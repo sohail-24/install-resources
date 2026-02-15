@@ -134,11 +134,27 @@ sudo bash common.sh
 
 Run on master:
 
+```bash
+vi kubeadm-config.yaml
 ```
-kubeadm init \
-  --pod-network-cidr=192.168.0.0/16 \
-  --upload-certs \
-  --cloud-provider=external
+
+```bash
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+kubernetesVersion: v1.29.15
+controlPlaneEndpoint: "10.0.1.219:6443"
+
+controllerManager:
+  extraArgs:
+    cloud-provider: external
+
+networking:
+  podSubnet: "192.168.0.0/16"
+```
+
+```bash
+sudo kubeadm init --config kubeadm-config.yaml --upload-certs
+
 ```
 
 Setup kubeconfig:
