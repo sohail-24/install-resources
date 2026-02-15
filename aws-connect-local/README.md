@@ -28,7 +28,34 @@ kubectl config get-contexts
 ```bash
 vi ~/.kube/config
 ```
-Paste everything you copy from aws master
+# Paste keys you copy from aws master
+
+```bash
+apiVersion: v1
+kind: Config
+
+clusters:
+- name: kubernetes
+  cluster:
+    server: https://13.232.165.68:6443
+    insecure-skip-tls-verify: true
+
+contexts:
+- name: kubernetes-admin@kubernetes
+  context:
+    cluster: kubernetes
+    user: kubernetes-admin
+
+current-context: kubernetes-admin@kubernetes
+
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: <PASTE_CLIENT_CERT_DATA>
+    client-key-data: <PASTE_CLIENT_KEY_DATA>
+
+preferences: {}
+```
 
 # Fix permissions (very important)
 
@@ -42,7 +69,7 @@ chmod 600 ~/.kube/config
 Run on Mac terminal:
 
 ```bash
-ssh -i <your-key.pem> -L 6443:10.0.1.216:6443 ubuntu@13.234.239.3
+ssh -i <your-key.pem> ssh -i sohail.pem ubuntu@13.232.165.68
 ```
 Open new terminal tab on Mac:
 
