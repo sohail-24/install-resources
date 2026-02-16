@@ -77,4 +77,14 @@ Open new terminal tab on Mac:
 kubectl get nodes
 ```
 
+# to activeate virtual environment
 
+```bash
+source venv/bin/activate
+```
+
+to deactivate
+
+```bash
+deactivate
+```
