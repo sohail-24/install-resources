@@ -515,6 +515,10 @@ sudo apt install -y nginx
 
 
 ---
+# install helm
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
 
 ## ✅ Outcome
 
