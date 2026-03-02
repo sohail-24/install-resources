@@ -449,6 +449,7 @@ kubectl patch svc argocd-server -n argocd -p '{
 }'
 ```
 
+
 # password
 
 ```bash
@@ -460,6 +461,27 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 ```bash
 kubectl get svc -n argocd
+```
+
+allow auto sync
+
+```bash
+kubectl patch application django-ecommerce -n argocd \
+  --type merge \
+  -p '{
+    "spec": {
+      "syncPolicy": {
+        "automated": {
+          "prune": true,
+          "selfHeal": true
+        },
+        "syncOptions": [
+          "CreateNamespace=true",
+          "ApplyOutOfSyncOnly=true"
+        ]
+      }
+    }
+  }'
 ```
 
 # storageClass
