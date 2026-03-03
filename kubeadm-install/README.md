@@ -516,8 +516,38 @@ sudo apt install -y nginx
 
 ---
 # install helm
+# first time:
+
 ```bash
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+# use
+```bash
+cd /tmp
+```
+
+```bash
+curl -LO https://get.helm.sh/helm-v3.14.4-linux-amd64.tar.gz
+```
+
+```bash
+tar -zxvf helm-v3.14.4-linux-amd64.tar.gz
+```
+
+```bash
+sudo mv linux-amd64/helm /usr/local/bin/helm
+```
+
+```bash
+helm version
+```
+
+
+then check command:
+
+```bash
+helm template test charts/django-ecommerce
 ```
 
 ## ✅ Outcome
